@@ -1,0 +1,405 @@
+<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name=theme-color content="#000"><meta name=apple-mobile-web-app-capable content=yes><meta name=mobile-web-app-capable content=yes>
+<link rel=manifest href=manifest.webmanifest><link rel=apple-touch-icon href=icon-192.png><title>GPS Speedo</title>
+<style>
+*{box-sizing:border-box;margin:0}[hidden]{display:none!important}
+html,body{height:100%;background:#000;color:#fff;font:16px system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.g{background:rgba(10,10,14,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#mp{position:relative;flex:1;min-height:0;min-width:0}
+#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#nav{position:absolute;left:8px;right:8px;top:8px;border-radius:16px;padding:8px 14px;display:flex;gap:14px;align-items:center}
+#ar{width:min(64px,14vh);height:min(64px,14vh);flex:none;transition:transform .3s}
+#nd{font-size:min(34px,8vh);font-weight:800}#nx{font-size:13px;opacity:.7}
+#lp{order:2;padding:8px 14px calc(8px + env(safe-area-inset-bottom));overflow-y:auto;touch-action:pan-y}
+#t0{display:flex;gap:8px;margin-bottom:6px}
+#t0 button{width:46px;height:46px;border:0;border-radius:12px;background:#2b2f3a;color:#fff;font-size:22px}
+#row{display:flex;align-items:flex-end;gap:14px}
+#sp{font-size:min(88px,19vh);font-weight:800;line-height:.95;font-variant-numeric:tabular-nums}#un{opacity:.6}
+#st{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;flex:1;font-size:11px;letter-spacing:.05em}
+#st b{display:block;font-size:min(19px,5vh);letter-spacing:0}
+#bt{display:flex;gap:10px;margin-top:10px}
+#bt button{flex:1;padding:min(14px,3vh);border:0;border-radius:14px;font-size:18px;font-weight:800}
+#go{background:#19c37d}#stop{background:#ff4d4d;color:#fff}
+@media (orientation:landscape){body{flex-direction:row;padding-left:env(safe-area-inset-left)}#lp{order:0;width:var(--lw,clamp(250px,34vw,360px));flex:none;height:100%}#lp.c{width:0!important;padding:0;overflow:hidden}#d1{display:block;order:1}#mp{order:2}#d2{display:block;order:3}#spp{order:4;width:var(--sw,300px);height:100%;flex:none}#spp.c{width:0!important}#row{flex-direction:column;align-items:stretch;gap:4px}#st{grid-template-columns:repeat(3,1fr)}}
+#sh,#mn{position:fixed;inset:6% 0 0;transform:translateY(105%);transition:.25s;padding:16px;border-radius:22px 22px 0 0;overflow:auto;touch-action:pan-y;z-index:5}
+#sh.o,#mn.o{transform:none}
+h3{display:flex;justify-content:space-between;margin-bottom:10px}h3 button{background:none;border:0;color:#fff;font-size:22px}
+#mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+#mg button{padding:16px;border:0;border-radius:14px;background:#2b2f3a;color:#fff;font-size:16px;text-align:left}
+.tr{padding:12px 0;border-top:1px solid #333;font-size:14px}.tr span{display:block;opacity:.7;margin:4px 0 8px}
+.tr button{margin-right:6px;padding:8px 12px;border:0;border-radius:10px;background:#2b2f3a;color:#fff}
+#ts{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:12px;opacity:0;transition:.3s;pointer-events:none;z-index:9;text-align:center}
+.dv{display:none;width:14px;flex:none;position:relative;touch-action:none;cursor:col-resize;background:#000}
+.dv::after{content:"";position:absolute;left:5px;top:0;bottom:0;width:3px;background:#2b2f3a}
+.dv button{position:absolute;top:50%;left:-7px;width:28px;height:58px;margin-top:-29px;border:0;border-radius:10px;background:#2b2f3a;color:#fff;font-size:18px;z-index:3}
+#spp{order:1;container-type:size;overflow:hidden}
+#spmain{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;height:100%;text-align:center}
+#spsetup{padding:12px;font-size:12px;line-height:1.4;overflow:auto;height:100%;touch-action:pan-y}
+#spsetup code{display:block;word-break:break-all;background:#222;padding:6px;border-radius:6px;margin:4px 0}
+#spsetup input{width:100%;padding:8px;border-radius:8px;border:0;margin:6px 0}
+#spsetup button{width:100%;padding:10px;border:0;border-radius:10px;background:#1db954;font-weight:800}
+#art{width:140px;width:min(calc(100cqw - 20px),48cqh);aspect-ratio:1;border-radius:12px;object-fit:cover;background:#222;flex:none}
+#spt{width:100%;min-width:0}
+#ti{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#ar2{opacity:.7;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pg{height:10px;background:#333;border-radius:5px;overflow:hidden;margin-top:8px}#pgi{display:block;height:100%;background:#1db954;width:0}
+#ct{display:flex;gap:10px}#ct button{width:46px;height:46px;border-radius:50%;border:0;background:#2b2f3a;color:#fff;font-size:20px}
+#mini{position:absolute;left:10px;bottom:10px;padding:8px 14px;border-radius:14px;font-size:26px;font-weight:800;z-index:2}#mini i{font-size:12px;font-style:normal;opacity:.6;margin-left:4px}
+@container (max-width:170px){#ar2,#pg{display:none}}
+@media (orientation:portrait){#spp{height:92px;flex:none}#spmain{flex-direction:row;text-align:left;padding:8px 12px;gap:12px}#art{width:68px;height:68px}#spt{flex:1}#pg{display:none}#mini{display:none!important}}
+#mini{display:flex;align-items:center;gap:8px}#mini button{border:0;border-radius:10px;background:#2b2f3a;color:#fff;font-size:18px;padding:6px 10px}#mex{display:none}body.mo #lp,body.mo .dv,body.mo #spp{display:none!important}body.mo #mini{display:flex!important}body.mo #mex{display:inline-block}
+body.sv .g{background:#000}
+#st{font-size:12px;color:#b8bfcc}#st b{color:#fff;font-size:min(22px,5.5vh)}#sp{text-shadow:0 2px 8px #000}#t0 button{width:50px;height:50px}.tr{font-size:15px}.tr span{font-size:13px}
+@keyframes pop{from{transform:scale(.6) rotate(-4deg);opacity:0}to{transform:none;opacity:1}}@keyframes up{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+#pc{animation:pop .7s cubic-bezier(.2,1.4,.4,1)}#tl .tr{animation:up .45s both}
+body.sv::after{content:"";position:fixed;inset:0;background:#000;opacity:.45;pointer-events:none;z-index:8}
+#home{position:fixed;inset:0;z-index:4;overflow:auto;touch-action:pan-y;background:radial-gradient(120% 70% at 50% 0,#1b2a4d,#07080c 70%);padding:calc(24px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom))}
+.hw{max-width:820px;margin:0 auto}#home h1{font-size:34px;font-weight:800}#home h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:24px 0 10px}#home p{opacity:.7;margin-top:4px}#hrt{display:inline-block;margin-top:12px;padding:6px 12px;border-radius:99px;background:#ffffff14;font-size:14px;opacity:1!important}
+#hs{width:100%;padding:24px;border:0;border-radius:22px;background:linear-gradient(135deg,#1fd68a,#0e9f63);color:#fff;font-size:28px;font-weight:800;margin-top:18px;box-shadow:0 10px 30px #19c37d44}
+#hsa{width:100%;margin-top:12px;padding:16px;border:0;border-radius:16px;background:#2b2f3a;color:#fff;font-size:17px;font-weight:700}
+#home #mg{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}#home #mg button{min-height:60px;background:#ffffff12;border:1px solid #ffffff1a}
+#pal{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 8px);z-index:9;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.pa{pointer-events:auto;touch-action:pan-y;display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:14px;border:1px solid #ff9500;font-size:17px;animation:up .3s}.pa span{opacity:.7;font-size:14px}.pa button{background:none;border:0;color:#fff;font-size:22px}
+#cu{position:absolute;right:10px;bottom:10px;max-width:min(340px,75%);padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.45;z-index:2}#cu div{margin-top:4px}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}.sc{background:#ffffff12;border-radius:14px;padding:12px}.sc small{display:block;opacity:.6;font-size:12px;text-transform:uppercase;letter-spacing:.05em}.sc b{font-size:22px}
+.lc h4,#tl h4{margin:12px 0 8px;font-size:16px}.wb{display:flex;gap:8px;align-items:flex-end;height:150px}.wb div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}.wb i{display:block;width:100%;background:#19c37d;border-radius:6px 6px 0 0}.wb small,.wb em{font-size:11px;font-style:normal;opacity:.8}
+</style></head><body>
+<div id=lp class=g>
+<div id=t0><button id=mb title=Menu>☰</button><button id=rc title="Recenter / heading-up">◎</button><button id=bs title="Battery saver (dim)">🔋</button><button id=cuB title="Catch-up checker">📡</button><button id=lsB title="Live rider stats">👁</button></div>
+<div id=row><div><div id=sp>0</div><div id=un>km/h</div></div>
+<div id=st><div>AVG<b id=av>0</b></div><div>MAX<b id=mx>0</b></div><div>DIST<b id=di>0</b></div><div>TIME<b id=tm>0:00:00</b></div><div>CLIMB<b id=cb>0 m</b></div><div>MOVING<b id=mv>0:00:00</b></div><div>LAST KM<b id=lk>–</b></div><div>HEART<b id=hr>–</b></div><div>ALT<b id=al>–</b></div><div>GPS<b id=ac>–</b></div></div></div>
+<div id=bt><button id=go>START</button><button id=stop hidden>STOP</button></div></div>
+<div class=dv id=d1><button id=c1>‹</button></div>
+<div id=mp><canvas id=map></canvas>
+<div id=mini class=g hidden><span id=ms>0</span><i id=mu2>km/h</i><button id=mgo>▶</button><button id=mex>⤢</button></div>
+<div id=cu class=g hidden></div><div id=nav class=g hidden><svg id=ar viewBox="0 0 24 24"><path d="M12 2l8 9h-5v11H9V11H4z" fill="#fff"/></svg><div><div id=nd></div><div id=nt></div><div id=nx></div></div></div></div>
+<div class=dv id=d2 hidden><button id=c2>›</button></div>
+<div id=spp class=g hidden>
+<div id=spsetup hidden><b>Connect Spotify</b> (one-time, free)<br>1. Open developer.spotify.com/dashboard, create an app (Web API).<br>2. Add this Redirect URI exactly:<code id=ru></code>3. Paste its Client ID:<input id=cid placeholder="Client ID" autocomplete=off><button id=cn>Connect</button></div>
+<div id=spmain hidden><img id=art alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+<div id=spt><div id=ti>Nothing playing</div><div id=ar2></div><div id=pg><i id=pgi></i></div></div>
+<div id=ct><button id=pv>⏮</button><button id=pp>▶</button><button id=nx2>⏭</button></div></div></div>
+<input type=file id=f accept=".gpx,.kml,.xml" hidden>
+<div id=mn class=g><h3><span>Menu</span><button id=mx2>✕</button></h3><div id=mg>
+<button id=im>📂 Import route file (GPX / KML)</button>
+<button id=gl>🔗 Import Google Maps link</button>
+<button id=dr>🧭 Directions list</button>
+<button id=tb>📋 Trips &amp; history</button>
+<button id=sv>🟧 Send latest trip to Strava</button>
+<button id=lb>🏷 Street labels</button>
+<button id=mu>📏 Units</button>
+<button id=pr>🗂 Past routes</button>
+<button id=cr>✖ Clear loaded route</button>
+<button id=ed>✏️ Move/add stops</button>
+<button id=ap>⏸ Auto-pause</button>
+<button id=sm>🎵 Spotify player</button>
+<button id=spl>⏱ Km splits</button>
+<button id=sl>📍 Share my location</button>
+<button id=mo>🗺 Map-only mode</button>
+<button id=ta>🔔 Turn alerts</button>
+<button id=rr>🔄 Auto re-route</button>
+<button id=os>🚨 Overspeed alert</button>
+<button id=hc>❤ Heart rate sensor</button>
+<button id=ol>🔒 Lock landscape</button>
+<button id=gr>👥 Group ride</button>
+<button id=ls>👁 Live rider stats</button>
+<button id=vo>🔊 Voice directions</button>
+<button id=sa>📊 Stats &amp; records</button>
+</div></div>
+<div id=sh class=g><h3><span id=sht>Trips</span><button id=cl>✕</button></h3><div id=tl></div></div>
+<div id=pal></div><div id=home><div class=hw><h1>GPS Speedo</h1><p>Set up your ride, then press start.</p><span id=hrt></span><button id=hs>▶ START RIDE</button><button id=hsa>📊 View stats &amp; records</button><h2>Route, group &amp; settings</h2><div id=hmg></div></div></div>
+<div id=ts></div>
+<script>
+const $=id=>document.getElementById(id),R=Math.PI/180,cl=(z)=>Math.max(2,Math.min(19,z));
+let S={st:0,pts:[],dist:0,mov:0,max:0,gain:0,spl:[],el:0,t0:0,tk:Date.now(),unit:+localStorage.u||0},cur=null,route=null,mans=[],cum=[],ri=0,view=null,follow=true,C={lat:20,lon:0,z:2},dirty=1,W,H,pv=null,lg=null,first=1,rot=0,hu=0,zu=0,lab=localStorage.l!='0',wps=[],edm=0,apm=+localStorage.ap||0,sv=0,ba=null,idleT=0,dg=null,lpT=0,mv0=[0,0],moved=0,rid=0;
+// ---------- helpers
+const hav=(a,b)=>{const p=(b[0]-a[0])*R,l=(b[1]-a[1])*R,x=Math.sin(p/2)**2+Math.cos(a[0]*R)*Math.cos(b[0]*R)*Math.sin(l/2)**2;return 12742000*Math.asin(Math.sqrt(x))};
+const brg=(a,b)=>{const L=(b[1]-a[1])*R,y=Math.sin(L)*Math.cos(b[0]*R),x=Math.cos(a[0]*R)*Math.sin(b[0]*R)-Math.sin(a[0]*R)*Math.cos(b[0]*R)*Math.cos(L);return(Math.atan2(y,x)/R+360)%360};
+const fd=m=>m<1000?(m<100?Math.round(m/5)*5:Math.round(m/10)*10)+' m':(m/1000).toFixed(m<10000?1:0)+' km';
+const esc=x=>String(x).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const fm=x=>x>=3600?(x/3600|0)+'h '+Math.round(x%3600/60)+'m':Math.max(1,Math.round(x/60))+' min';
+const mmss=x=>Math.floor(x/60)+':'+String(Math.round(x%60)).padStart(2,'0');
+const pace=()=>S.mov>5&&S.dist>0?S.dist/S.mov:cur&&cur.v>2?cur.v:0;
+const dk=m=>S.unit?(m/1609.34).toFixed(2)+' mi':(m/1000).toFixed(2)+' km';
+const ft=s=>{s=Math.floor(s);return[s/3600|0,(s/60|0)%60,s%60].map((x,i)=>i?String(x).padStart(2,'0'):x).join(':')};
+const toast=m=>{const e=$('ts');e.textContent=m;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,3000)};
+// ---------- storage (IndexedDB)
+const dbp=new Promise(r=>{const q=indexedDB.open('spd',1);q.onupgradeneeded=()=>q.result.createObjectStore('k');q.onsuccess=()=>r(q.result)});
+const kv=async(m,f)=>{const d=await dbp;return new Promise(r=>{const q=f(d.transaction('k',m=='r'?'readonly':'readwrite').objectStore('k'));q.onsuccess=()=>r(q.result);q.onerror=()=>r()})};
+// ---------- satellite map (own canvas renderer, tiles cached offline by service worker)
+const cv=$('map'),cx=cv.getContext('2d'),T=new Map();
+const rs=()=>{const d=devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0);dirty=1};
+const wp=(lat,lon,z)=>{const n=256*2**z,s=Math.sin(lat*R);return[(lon+180)/360*n,(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n]};
+const ll=(x,y,z)=>{const n=256*2**z;return[Math.atan(Math.sinh(Math.PI*(1-2*y/n)))/R,x/n*360-180]};
+const SV=['World_Imagery','Reference/World_Transportation','Reference/World_Boundaries_and_Places'];
+const tu=(L,z,x,y)=>`https://server.arcgisonline.com/ArcGIS/rest/services/${SV[L]}/MapServer/tile/${z}/${y}/${x}`;
+const tile=(L,z,x,y)=>{const k=`${L}/${z}/${x}/${y}`;let i=T.get(k);if(!i){i=new Image();i.crossOrigin='anonymous';i.onload=()=>{i.ok=1;dirty=1};i.src=tu(L,z,x,y);T.set(k,i);if(T.size>900)T.delete(T.keys().next().value)}return i};
+const draw=()=>{dirty=0;cx.fillStyle='#111';cx.fillRect(0,0,W,H);
+const tz=Math.round(cl(C.z)),sc=2**(C.z-tz),[ox,oy]=wp(C.lat,C.lon,tz),n=2**tz,ts=256*sc,cy=hu?H*.6:H/2,big=rot||hu,hw=big?Math.hypot(W,H):W/2,hh=big?hw:H/2;
+cx.save();cx.translate(W/2,cy);cx.rotate(-rot*R);cx.translate(-W/2,-cy);
+const x0=Math.floor((ox-hw/sc)/256),x1=Math.floor((ox+hw/sc)/256),y0=Math.max(0,Math.floor((oy-hh/sc)/256)),y1=Math.min(n-1,Math.floor((oy+hh/sc)/256));
+for(let L=0;L<(lab&&!hu?3:1);L++)for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){const xx=((x%n)+n)%n,i=tile(L,tz,xx,y),dx=(x*256-ox)*sc+W/2,dy=(y*256-oy)*sc+cy;
+if(i.ok)cx.drawImage(i,dx,dy,ts+.5,ts+.5);else if(!L)for(let d=1;d<=3&&tz-d>=0;d++){const p=T.get(`0/${tz-d}/${xx>>d}/${y>>d}`);if(p&&p.ok){const s=256/2**d,m=2**d-1;cx.drawImage(p,(xx&m)*s,(y&m)*s,s,s,dx,dy,ts+.5,ts+.5);break}}}
+const P=a=>{const[px,py]=wp(a[0],a[1],tz);return[(px-ox)*sc+W/2,(py-oy)*sc+cy]};
+const ln=(pts,col,w)=>{if(!pts||pts.length<2)return;cx.beginPath();pts.forEach((a,i)=>{const[x,y]=P(a);i?cx.lineTo(x,y):cx.moveTo(x,y)});cx.strokeStyle=col;cx.lineWidth=w;cx.lineJoin=cx.lineCap='round';cx.stroke()};
+ln(route,'#00e5ff',6);ln(view,'#ff4df0',5);ln(S.pts,'#ffd400',5);
+wps.forEach(w=>{const[x,y]=P(w.p);cx.save();cx.translate(x,y);cx.rotate(rot*R);cx.beginPath();cx.arc(0,0,9,0,7);cx.fillStyle=/start|finish/i.test(w.n)?'#19c37d':'#ff9500';cx.fill();cx.lineWidth=3;cx.strokeStyle='#fff';cx.stroke();cx.font='bold 14px system-ui';cx.lineWidth=4;cx.strokeStyle='#000';cx.strokeText(w.n,14,5);cx.fillStyle='#fff';cx.fillText(w.n,14,5);cx.restore()});
+Object.values(riders).forEach(g=>{const[x,y]=P(g.p);cx.save();cx.translate(x,y);cx.rotate(rot*R);cx.beginPath();cx.arc(0,0,11,0,7);cx.fillStyle=COL[g.id.charCodeAt(g.id.length-1)%6];cx.fill();cx.lineWidth=3;cx.strokeStyle='#fff';cx.stroke();cx.font='bold 14px system-ui';cx.lineWidth=4;cx.strokeStyle='#000';const t=g.n+' · '+Math.round(g.v*(S.unit?2.23694:3.6));cx.strokeText(t,16,5);cx.fillStyle='#fff';cx.fillText(t,16,5);cx.restore()});
+if(cur){const[x,y]=P(cur.p);cx.save();cx.translate(x,y);cx.rotate(cur.h*R);cx.fillStyle='#2b8cff';cx.strokeStyle='#fff';cx.lineWidth=3;cx.beginPath();cx.moveTo(0,-16);cx.lineTo(11,12);cx.lineTo(0,6);cx.lineTo(-11,12);cx.closePath();cx.fill();cx.stroke();cx.restore()}
+cx.restore()};
+const loop=()=>{if(dirty&&(!sv||Date.now()-lastD>1500)){lastD=Date.now();draw()}sv?setTimeout(loop,500):requestAnimationFrame(loop)};
+const pan=(dx,dy)=>{const r=rot*R,c=Math.cos(r),q=Math.sin(r),[ox,oy]=wp(C.lat,C.lon,C.z);[C.lat,C.lon]=ll(ox-(dx*c-dy*q),oy-(dx*q+dy*c),C.z)};
+const ptr=new Map();
+const scr=a=>{const[px,py]=wp(a[0],a[1],C.z),[ox,oy]=wp(C.lat,C.lon,C.z),q=rot*R,wx=px-ox,wy=py-oy;return[wx*Math.cos(q)+wy*Math.sin(q)+W/2,-wx*Math.sin(q)+wy*Math.cos(q)+(hu?H*.6:H/2)]};
+const s2l=(x,y)=>{const q=rot*R,dx=x-W/2,dy=y-(hu?H*.6:H/2),[ox,oy]=wp(C.lat,C.lon,C.z);return ll(ox+dx*Math.cos(q)-dy*Math.sin(q),oy+dx*Math.sin(q)+dy*Math.cos(q),C.z)};
+const sxy=e=>{const b=cv.getBoundingClientRect();return[e.clientX-b.left,e.clientY-b.top]};
+cv.onpointerdown=e=>{cv.setPointerCapture(e.pointerId);tp=[e.clientX,e.clientY,Date.now()];ptr.set(e.pointerId,[e.clientX,e.clientY]);dg=null;moved=0;clearTimeout(lpT);
+if(edm&&ptr.size==1){const[x,y]=sxy(e);mv0=[x,y];dg=wps.find(w=>{const q=scr(w.p);return Math.hypot(q[0]-x,q[1]-y)<26})||null;
+lpT=setTimeout(()=>{if(moved)return;const w=dg;dg=null;ptr.clear();
+if(w){const n=prompt('Rename stop (leave empty to delete)',w.n);if(n===null)return;if(n.trim())w.n=n.trim();else wps.splice(wps.indexOf(w),1)}
+else{const n=prompt('Name this new stop','Rest stop');if(!n||!n.trim())return;wps.push({p:s2l(x,y),n:n.trim()})}
+snapW();upd();dirty=1},600)}};
+cv.onpointermove=e=>{const o=ptr.get(e.pointerId);if(!o)return;const nw=[e.clientX,e.clientY];
+if(edm&&ptr.size==1){const[x,y]=sxy(e);if(Math.hypot(x-mv0[0],y-mv0[1])>8){moved=1;clearTimeout(lpT)}if(!moved)return;if(dg){dg.p=s2l(x,y);ptr.set(e.pointerId,nw);dirty=1;return}}
+if(ptr.size==1){pan(nw[0]-o[0],nw[1]-o[1]);follow=false}
+else{const q=[...ptr].find(([k])=>k!=e.pointerId)[1],d0=Math.hypot(o[0]-q[0],o[1]-q[1]),d1=Math.hypot(nw[0]-q[0],nw[1]-q[1]);if(d0){C.z=cl(C.z+Math.log2(d1/d0));zu=1}}
+ptr.set(e.pointerId,nw);dirty=1};
+cv.onpointerup=cv.onpointercancel=e=>{if(e.type=='pointerup'&&tp&&ptr.size==1&&!edm&&Math.hypot(e.clientX-tp[0],e.clientY-tp[1])<10&&Date.now()-tp[2]<500){const[x,y]=sxy(e),g=Object.values(riders).find(g=>{const q=scr(g.p);return Math.hypot(q[0]-x,q[1]-y)<30});if(g)liveSheet(g.id)}ptr.delete(e.pointerId);clearTimeout(lpT);if(dg&&moved){snapW();upd();dirty=1}dg=null};
+cv.onwheel=e=>{e.preventDefault();C.z=cl(C.z-e.deltaY/300);zu=1;dirty=1};
+const fit=pts=>{let a=[90,-90],b=[180,-180];pts.forEach(p=>{a=[Math.min(a[0],p[0]),Math.max(a[1],p[0])];b=[Math.min(b[0],p[1]),Math.max(b[1],p[1])]});
+C.lat=(a[0]+a[1])/2;C.lon=(b[0]+b[1])/2;let z=18;for(;z>3;z--){const p=wp(a[1],b[0],z),q=wp(a[0],b[1],z);if(q[0]-p[0]<W*.8&&q[1]-p[1]<H*.45)break}C.z=z;follow=false;rot=0;hu=0;dirty=1};
+// ---------- GPS
+let wl;const wake=async()=>{try{wl=await navigator.wakeLock.request('screen')}catch(e){}};
+document.onvisibilitychange=()=>{if(!document.hidden&&S.st==1)wake()};
+const onPos=p=>{const c=p.coords;if(c.accuracy>60)return;const t=p.timestamp,a=[c.latitude,c.longitude,t,c.altitude];
+let v=c.speed;if(v==null&&pv)v=hav(pv,a)/Math.max(.5,(t-pv[2])/1e3);v=v>.6?v:0;
+const h=(c.heading!=null&&!isNaN(c.heading)&&v)?c.heading:(pv&&v&&hav(pv,a)>3?brg(pv,a):(cur?cur.h:0));
+if(!pv||hav(pv,a)>3)pv=a;cur={p:a,v,h,acc:c.accuracy};{const lm=+localStorage.os;if(lm&&v*3.6>lm&&Date.now()-lastOs>10000){lastOs=Date.now();beep(1500,400)}}if(pr0&&Date.now()-sendT>900){sendT=Date.now();gSend()}idleT=v?0:(idleT||t);
+if(S.st==1){S.max=Math.max(S.max,v);if(a[3]!=null){if(ba==null)ba=a[3];else if(a[3]-ba>=3){S.gain+=a[3]-ba;ba=a[3]}else if(a[3]<ba-3)ba=a[3]}if(!lg){S.pts.push(a);lg=a}else if(v){const d=hav(lg,a);if(d>=3){S.pts.push(a);S.dist+=d;S.mov+=Math.min(10,(t-lg[2])/1e3);lg=a;while(S.dist>=(S.spl.length+1)*1000){S.spl.push(S.mov);const n=S.spl.length;toast('Km '+n+' · '+mmss(S.mov-(S.spl[n-2]||0)))}}}}
+if(first){first=0;C.z=17}if(follow){C.lat=a[0];C.lon=a[1];if(hu&&v){rot=(rot+((h-rot+540)%360-180)*.35+360)%360}if(!zu){const g=v>22?15.8:v>12?16.4:v>5?17:17.8;C.z+=(g-C.z)*.2}}
+nav();ui();dirty=1};
+navigator.geolocation.watchPosition(onPos,e=>toast('Location error: '+e.message),{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+// ---------- UI
+const autop=()=>S.st==1&&apm&&idleT&&Date.now()-idleT>4000;
+const ui=()=>{const k=S.unit?2.23694:3.6,v=cur?cur.v:0;
+$('sp').textContent=Math.round(v*k);$('un').textContent=S.unit?'mph':'km/h';
+$('av').textContent=S.mov>5?(S.dist/S.mov*k).toFixed(1):0;$('mx').textContent=Math.round(S.max*k);$('di').textContent=dk(S.dist);$('tm').textContent=ft(S.el);
+$('cb').textContent=Math.round(S.gain)+' m';{const L=S.spl;$('lk').textContent=L.length?mmss(L[L.length-1]-(L[L.length-2]||0)):'–'}$('mv').textContent=ft(S.mov);$('al').textContent=cur&&cur.p[3]!=null?Math.round(cur.p[3])+' m':'–';$('ac').textContent=autop()?'auto-paused':cur?'±'+Math.round(cur.acc)+' m':'no fix';
+$('go').textContent=['START','PAUSE','RESUME'][S.st];$('stop').hidden=!S.st;$('mu').textContent='📏 Units: '+(S.unit?'mph / miles':'km/h / km');$('lb').textContent='🏷 Street labels: '+(lab?'on':'off');$('ed').textContent='✏️ Move/add stops: '+(edm?'on':'off');$('ap').textContent='⏸ Auto-pause: '+(apm?'on':'off');$('ms').textContent=Math.round(v*k);$('sm').textContent='🎵 Spotify player: '+(spOn()?'on':'off');$('mu2').textContent=S.unit?'mph':'km/h';$('mgo').textContent=S.st==1?'⏸':'▶';$('mo').textContent='🗺 Map-only mode: '+(localStorage.mo=='1'?'on':'off');$('ta').textContent='🔔 Turn & stop alerts: '+(taOn()?'on':'off');$('rr').textContent='🔄 Auto re-route: '+(rrOn()?'on':'off');const lm=+localStorage.os;$('os').textContent='🚨 Overspeed alert: '+(lm?'on ('+Math.round(lm*(S.unit?.621371:1))+' '+(S.unit?'mph':'km/h')+')':'off');$('sp').style.color=lm&&v*3.6>lm?'#ff4d4d':'';$('hr').textContent=hv||'–';$('hc').textContent='❤ Heart rate sensor: '+(hv?'connected':'connect');$('ol').textContent='🔒 Lock landscape: '+(localStorage.ol=='1'?'on':'off');$('gr').textContent='👥 Group ride'+(room?' · '+room:'')};
+setInterval(()=>{const n=Date.now();if(S.st==1&&!autop())S.el+=(n-S.tk)/1e3;S.tk=n;ui();liveR();cuR();paTick()},1000);
+setInterval(()=>{if(S.st&&S.pts.length>1)kv('w',s=>s.put({id:S.t0,pts:S.pts,dist:S.dist,mov:S.mov,el:S.el,max:S.max,gain:S.gain,spl:S.spl},'cur'))},15000);
+$('sp').onclick=()=>{S.unit^=1;localStorage.u=S.unit;ui()};
+$('go').onclick=()=>{S.tk=Date.now();if(!S.st){S.t0=Date.now();S.st=1;wake()}else S.st=S.st==1?2:1;lg=null;ui()};
+const stop=async()=>{if(!S.st||!confirm('Stop and save this trip?'))return;const t={id:S.t0,pts:S.pts,dist:S.dist,mov:S.mov,el:S.el,max:S.max,gain:S.gain,spl:S.spl,hr:hrS.length?[Math.round(hrS.reduce((a,b)=>a+b)/hrS.length),Math.max(...hrS)]:null};S.st=0;hrS=[];
+if(t.pts.length>1)await kv('w',s=>s.put(t,'t'+t.id));await kv('w',s=>s.delete('cur'));
+S={...S,pts:[],dist:0,mov:0,max:0,gain:0,spl:[],el:0};lg=null;if(t.pts.length>1){summary(t)}home(1);ui()};
+$('stop').onclick=stop;
+$('rc').onclick=()=>{if(follow&&cur){hu^=1;if(!hu)rot=0}else{follow=true;zu=0;view=null}if(cur){C.lat=cur.p[0];C.lon=cur.p[1];if(hu)rot=cur.h}$('rc').textContent=hu?'⬆':'◎';dirty=1};
+$('lb').onclick=()=>{lab=!lab;localStorage.l=lab?1:0;dirty=1;ui()};
+// ---------- GPX import + turn guidance (computed from route geometry)
+const tx=t=>{const a=Math.abs(t),s=t<0?'left':'right';return a>165?'Make a U-turn':(a<60?'Slight ':a>120?'Sharp ':'Turn ')+s};
+const snapW=()=>{if(!route)return;wps.forEach(w=>{let b=1e9;route.forEach((q,i)=>{const d=hav(q,w.p);if(d<b){b=d;w.i=i}})});wps.sort((a,b)=>a.i-b.i)};
+const setRoute=(pts,ms,nf)=>{let L=pts[0];pts=pts.filter((p,i)=>{if(!i||i==pts.length-1||hav(L,p)>=8){L=p;return 1}});route=pts;cum=[0];for(let i=1;i<pts.length;i++)cum[i]=cum[i-1]+hav(pts[i-1],pts[i]);ri=0;mans=[];vs={};snapW();
+const at=(i,d)=>{let j=i;while(j+d>=0&&j+d<pts.length&&Math.abs(cum[j]-cum[i])<30)j+=d;return j};
+for(let i=1;i<pts.length-1;i++){const a=at(i,-1),b=at(i,1);if(a==i||b==i)continue;const t=((brg(pts[i],pts[b])-brg(pts[a],pts[i])+540)%360)-180;
+if(Math.abs(t)>=40){const m=mans[mans.length-1];if(m&&cum[i]-cum[m.i]<50){if(Math.abs(t)>Math.abs(m.t)){m.i=i;m.t=t;m.n=pts[i][4]}}else mans.push({i,t,n:pts[i][4]})}}
+if(ms)mans=ms.map(x=>{let b=1e9,i=0;pts.forEach((q,j)=>{const d=hav(q,x.p);if(d<b){b=d;i=j}});return{i,t:x.t,n:x.n}}).filter(x=>x.i>0&&x.i<pts.length-1).sort((a,b)=>a.i-b.i);if(!nf)fit(pts);nav()};
+const nav=()=>{const el=$('nav');if(!route||!cur){el.hidden=1;return}el.hidden=0;
+let b=1e9,bi=ri;const lo=Math.max(0,ri-5),hi=ri?Math.min(route.length,ri+150):route.length;
+for(let i=lo;i<hi;i++){const d=hav(cur.p,route[i]);if(d<b){b=d;bi=i}}
+if(b>80&&ri)for(let i=0;i<route.length;i++){const d=hav(cur.p,route[i]);if(d<b){b=d;bi=i}}
+ri=bi;const left=cum[cum.length-1]-cum[ri],m=mans.find(x=>x.i>ri),set=(r,d,t,x)=>{$('ar').style.transform=`rotate(${r}deg)`;$('nd').textContent=d;$('nt').textContent=t;$('nx').textContent=x};
+if(b>60){offT=offT||Date.now();if(rrOn()&&Date.now()-offT>8000)reroute();return set(0,fd(b),rrOn()?'Off route – re-routing…':'Off route – head to the line',fd(left)+' left on route')}offT=0;
+if(!m||left<25)return set(0,fd(left),'Arrive at destination','');
+const m2=mans.find(x=>x.i>m.i),d=cum[m.i]-cum[ri];
+const w=wps.find(x=>x.i>ri);callout(m,d,w);const sp=pace(),et=x=>sp?' · ~'+fm(x/sp)+' ('+new Date(Date.now()+x/sp*1e3).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+')':'';set(m.t,fd(d),m.n||tx(m.t),(w?w.n+' in '+fd(cum[w.i]-cum[ri])+et(cum[w.i]-cum[ri])+' · ':'')+(m2?'Then '+(m2.n||tx(m2.t)).toLowerCase()+' in '+fd(cum[m2.i]-cum[m.i])+' · ':'')+fd(left)+' left'+et(left)+(sp?' · @ '+(sp*(S.unit?2.23694:3.6)).toFixed(1)+(S.unit?' mph':' km/h')+(S.mov>5?' avg':' now'):''))};
+const steps=()=>{if(!route)return toast('Import a GPX route first');$('sht').textContent='Directions';const T=cum[cum.length-1];
+const it=mans.map(m=>({k:cum[m.i],i:m.i,t:m.n||tx(m.t)})).concat(wps.map(w=>({k:cum[w.i],i:w.i,t:'📍 '+w.n,s:1}))).sort((a,b)=>a.k-b.k);let prev=0,n=0;
+const rows=[`<div class=tr><b>Start</b><span>${fd(T)} total · ${mans.length} turns${wps.length?' · '+wps.length+' stops':''}</span></div>`];
+it.forEach(x=>{const d=x.k-prev;prev=x.k;rows.push(`<div class=tr data-i=${x.i}><b>${esc(x.s?x.t:++n+'. '+x.t)}</b><span>after ${fd(d)} · ${fd(x.k)} from start · ${fd(T-x.k)} to go</span></div>`)});
+rows.push(`<div class=tr><b>Arrive at destination</b><span>${fd(T-prev)} after the last item</span></div>`);
+$('tl').innerHTML=rows.join('');$('sh').classList.add('o')};
+$('dr').onclick=steps;$('nav').onclick=steps;
+$('im').onclick=()=>$('f').click();
+const load=(p,w,ms,name)=>{if(p.length<2)return toast('No route found in file');wps=w;setRoute(p,ms);saveRoute(name||'Route');toast('Route: '+fd(cum[cum.length-1])+' · '+mans.length+' turns'+(wps.length?' · '+wps.length+' stops':''));steps()};
+const cap=x=>x[0].toUpperCase()+x.slice(1);
+const gm=async u=>{try{
+if(/goo\.gl/.test(u))return toast("Short Google links can't be read. Open it in a browser and paste the long google.com/maps/dir/... address.");
+const m=u.match(/\/dir\/([^?#]*)/);if(!m)return toast('Paste a google.com/maps/dir/... directions link');
+const sg=[];for(const x of m[1].split('/')){if(!x||x[0]=='@'||x.startsWith('data='))break;sg.push(decodeURIComponent(x.replace(/\+/g,' ')))}
+if(sg.length<2)return toast('Need a start and a destination');toast('Finding route…');const pt=[];
+for(const x of sg){const c=x.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);if(c)pt.push([+c[1],+c[2]]);else{const g=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(x))).json();if(!g[0])return toast('Could not find "'+x+'"');pt.push([+g[0].lat,+g[0].lon])}}
+const md=(u.match(/!3e(\d)/)||[])[1],pr=md==1?'bike':md==2?'foot':'car';
+const j=await(await fetch(`https://routing.openstreetmap.de/routed-${pr}/route/v1/driving/${pt.map(c=>c[1]+','+c[0]).join(';')}?overview=full&geometries=geojson&steps=true`)).json();
+const rt=j.routes&&j.routes[0];if(!rt)return toast('No route found');
+const ms=rt.legs.flatMap(l=>l.steps).filter(s=>!/depart|arrive/.test(s.maneuver.type)&&(s.maneuver.modifier!='straight'||/roundabout|rotary/.test(s.maneuver.type))).map(s=>{const m=s.maneuver,o=m.modifier||'',t={'sharp left':-135,left:-90,'slight left':-45,'slight right':45,right:90,'sharp right':135,uturn:180}[o]||0,L=o=='left'||o=='right',on=s.name?' onto '+s.name:'';
+return{p:[m.location[1],m.location[0]],t,n:/roundabout|rotary/.test(m.type)?'Roundabout, exit '+(m.exit||'')+on:(o=='uturn'?'Make a U-turn':(L?'Turn ':'')+cap(o||'continue'))+on}});
+load(rt.geometry.coordinates.map(c=>[c[1],c[0],0,0]),sg.map((n,i)=>({p:pt[i],n:(i?i==sg.length-1?'Finish':'Stop '+i:'Start')+(/^-?\d/.test(n)?'':' - '+n.split(',')[0])})),ms,'Google: '+sg.map(x=>x.split(',')[0]).join(' > '))
+}catch(e){toast('Could not load route (needs internet)')}};
+$('gl').onclick=()=>{const u=prompt('Paste the Google Maps directions link');if(u)gm(u)};
+$('f').onchange=async e=>{const f=e.target.files[0];if(!f)return;const d=new DOMParser().parseFromString(await f.text(),'text/xml'),nm=x=>x.getElementsByTagName('name')[0]?.textContent,fn=f.name.replace(/\.\w+$/,'');
+if(d.getElementsByTagName('kml').length){const cs=x=>x.getElementsByTagName('coordinates')[0].textContent.trim().split(/\s+/).map(y=>y.split(',').map(Number));
+load([...d.getElementsByTagName('LineString')].flatMap(l=>cs(l).map(c=>[c[1],c[0],0,0])),[...d.getElementsByTagName('Placemark')].filter(x=>x.getElementsByTagName('Point').length).map(x=>{const c=cs(x)[0];return{p:[c[1],c[0]],n:nm(x)||'Stop'}}),0,fn)}
+else{const q=t=>[...d.getElementsByTagName(t)].map(x=>[+x.getAttribute('lat'),+x.getAttribute('lon'),0,0,nm(x)]);let p=q('trkpt');if(p.length<2)p=q('rtept');load(p,q('wpt').map(a=>({p:a,n:a[4]||'Stop'})),0,fn)}
+e.target.value=''};
+// ---------- trips, GPX export, Strava
+const gpx=t=>`<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="GPS Speedo" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>Trip ${new Date(t.id).toISOString().slice(0,16)}</name><trkseg>${t.pts.map(p=>`<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}">${p[3]!=null?`<ele>${(+p[3]).toFixed(1)}</ele>`:''}<time>${new Date(p[2]).toISOString()}</time></trkpt>`).join('')}</trkseg></trk></gpx>`;
+const out=async(t,strava)=>{const f=new File([gpx(t)],`trip-${t.id}.gpx`,{type:'application/gpx+xml'});
+if(strava&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Trip'});return}catch(e){if(e.name=='AbortError')return}}
+const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click();
+if(strava){toast('GPX saved – choose it on Strava');setTimeout(()=>open('https://www.strava.com/upload/select'),1200)}};
+const trips=async()=>{$('sht').textContent='Trips';const all=((await kv('r',s=>s.getAll()))||[]).filter(x=>x&&x.pts).sort((a,b)=>b.id-a.id),k=S.unit?2.23694:3.6;
+$('tl').innerHTML=all.map(t=>`<div class=tr><b>${new Date(t.id).toLocaleString()}</b><span>${dk(t.dist)} · ${ft(t.el)} · avg ${t.mov>5?(t.dist/t.mov*k).toFixed(1):0} · max ${Math.round(t.max*k)} ${S.unit?'mph':'km/h'} · climb ${Math.round(t.gain||0)} m</span><button data-a=sm data-i=${t.id}>Summary</button><button data-a=v data-i=${t.id}>Map</button><button data-a=g data-i=${t.id}>GPX</button><button data-a=s data-i=${t.id}>Strava</button><button data-a=d data-i=${t.id}>🗑</button></div>`).join('')||'<p style="opacity:.6">No trips yet – press START.</p>'};
+$('tb').onclick=()=>{$('sh').classList.add('o');trips()};$('cl').onclick=()=>$('sh').classList.remove('o');
+$('tl').onclick=async e=>{const b=e.target.closest('button');if(!b){const q=e.target.closest('.tr[data-i]');if(q&&route){const p=route[+q.dataset.i];C.lat=p[0];C.lon=p[1];C.z=18;follow=false;dirty=1;$('sh').classList.remove('o')}return}const id=+b.dataset.i,a=b.dataset.a;if(a=='gz'){const g=riders[b.dataset.r];if(g){C.lat=g.p[0];C.lon=g.p[1];follow=false;C.z=Math.max(C.z,15);dirty=1;$('sh').classList.remove('o')}return}if(a=='gc'){gStart();return}if(a=='gj'){const c=prompt('Enter the room code');if(c)gJoin(c);return}if(a=='gl'){gLeave();return}if(a=='gs'){gShare();return}if(a=='rl'||a=='rd'){const k='r'+id;if(a=='rd'){if(confirm('Delete this route?')){await kv('w',s=>s.delete(k));routes()}}else{useRoute(await kv('r',s=>s.get(k)));$('sh').classList.remove('o')}return}const t=await kv('r',s=>s.get('t'+id));
+if(a=='d'){if(confirm('Delete this trip?')){await kv('w',s=>s.delete('t'+id));trips()}}
+else if(a=='v'){view=t.pts;fit(view);$('sh').classList.remove('o')}else if(a=='img')shareImg(t);else if(a=='sm')summary(t);else out(t,a=='s')};
+// ---------- menu
+$('mb').onclick=()=>$('mn').classList.add('o');$('mx2').onclick=()=>$('mn').classList.remove('o');
+$('mg').addEventListener('click',e=>{if(!e.target.closest('#lb,#mu,#ed,#ap,#ta,#rr,#os,#vo'))$('mn').classList.remove('o')});
+$('mu').onclick=$('sp').onclick;
+$('sv').onclick=async()=>{const all=((await kv('r',s=>s.getAll()))||[]).filter(x=>x&&x.pts).sort((a,b)=>b.id-a.id);if(!all.length)return toast('No saved trips yet – record one first');out(all[0],true)};
+// ---------- saved routes, stop editing, auto-pause, battery saver
+const saveRoute=async name=>{rid=Date.now();localStorage.lr=rid;await kv('w',s=>s.put({id:rid,name,route,mans,wps,dist:cum[cum.length-1]},'r'+rid))};
+const upd=async()=>{if(!rid)return;const q=await kv('r',s=>s.get('r'+rid));if(q){q.wps=wps;await kv('w',s=>s.put(q,'r'+rid))}};
+const useRoute=q=>{if(!q)return;rid=q.id;localStorage.lr=q.id;wps=q.wps;setRoute(q.route,q.mans.map(m=>({p:q.route[m.i],t:m.t,n:m.n})));toast('Loaded: '+q.name)};
+const routes=async()=>{$('sht').textContent='Past routes';const all=((await kv('r',s=>s.getAll()))||[]).filter(x=>x&&x.route).sort((a,b)=>b.id-a.id);
+$('tl').innerHTML=all.map(x=>`<div class=tr><b>${esc(x.name)}</b><span>${new Date(x.id).toLocaleDateString()} · ${(x.dist/1000).toFixed(1)} km · ${x.wps.length} stops</span><button data-a=rl data-i=${x.id}>Load</button><button data-a=rd data-i=${x.id}>🗑</button></div>`).join('')||'<p style="opacity:.6">No saved routes yet – import one.</p>';$('sh').classList.add('o')};
+$('pr').onclick=routes;
+$('cr').onclick=()=>{route=null;mans=[];cum=[];wps=[];ri=0;rid=0;localStorage.removeItem('lr');$('nav').hidden=1;dirty=1;toast('Route cleared (still saved in Past routes)')};
+$('ed').onclick=()=>{edm^=1;ui();if(edm)toast('Hold the map to add a stop · drag a stop to move it · hold a stop to rename or delete')};
+$('ap').onclick=()=>{apm^=1;localStorage.ap=apm;ui()};
+$('bs').onclick=()=>{sv=sv?0:1;document.body.classList.toggle('sv',!!sv);$('bs').style.background=sv?'#19c37d':'';dirty=1};
+(async()=>{const id=+localStorage.lr;if(id){const q=await kv('r',s=>s.get('r'+id));if(q&&!route)useRoute(q)}})();
+// ---------- Spotify + resizable panes
+const spOn=()=>localStorage.so=='1',rurl=()=>location.origin+location.pathname.replace(/index\.html$/,''),GIF='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+let spS=null,spt=0;
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const spAuth=async()=>{const id=$('cid').value.trim();if(!id)return toast('Paste your Spotify Client ID first');localStorage.spid=id;const v=b64(crypto.getRandomValues(new Uint8Array(48)));localStorage.spv=v;
+const ch=b64(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+location.href='https://accounts.spotify.com/authorize?'+new URLSearchParams({client_id:id,response_type:'code',redirect_uri:rurl(),code_challenge_method:'S256',code_challenge:ch,scope:'user-read-playback-state user-modify-playback-state'})};
+const tok=async b=>{try{const j=await(await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:localStorage.spid,...b})})).json();if(!j.access_token)return 0;localStorage.spa=j.access_token;localStorage.spe=Date.now()+j.expires_in*1e3-30000;if(j.refresh_token)localStorage.spr=j.refresh_token;return 1}catch(e){return 0}};
+const spf=async(p,m)=>{if(!localStorage.spr)return;if(Date.now()>+localStorage.spe&&!await tok({grant_type:'refresh_token',refresh_token:localStorage.spr}))return;
+try{const r=await fetch('https://api.spotify.com/v1/me/player'+p,{method:m||'GET',headers:{Authorization:'Bearer '+localStorage.spa}});return r.status==200&&!m?r.json():r.status}catch(e){}};
+const spBar=()=>{if(spS&&spS.item){const p=spS.progress_ms+(spS.is_playing?Date.now()-spt:0);$('pgi').style.width=Math.min(100,p/spS.item.duration_ms*100)+'%'}else $('pgi').style.width=0};
+const spUI=()=>{const c=!localStorage.spr;$('spsetup').hidden=!c;$('spmain').hidden=c;if(c)return;const it=spS&&spS.item,u=it?(it.album.images[0]||{}).url||GIF:GIF;if($('art').dataset.u!=u){$('art').dataset.u=u;$('art').src=u}
+$('ti').textContent=it?it.name:'Nothing playing';$('ar2').textContent=it?it.artists.map(a=>a.name).join(', '):'Start playing in the Spotify app';$('pp').textContent=spS&&spS.is_playing?'⏸':'▶';spBar()};
+const spPoll=async()=>{if(!spOn()||!localStorage.spr)return;const j=await spf('');if(j&&typeof j=='object'){spS=j;spt=Date.now()}else spS=null;spUI()};
+const spc=async(p,m)=>{const r=await spf(p,m);if(r==404)toast('Open the Spotify app and play something first');else if(r==403)toast('Spotify Premium is needed for controls');setTimeout(spPoll,600)};
+$('pp').onclick=()=>spc(spS&&spS.is_playing?'/pause':'/play','PUT');$('nx2').onclick=()=>spc('/next','POST');$('pv').onclick=()=>spc('/previous','POST');
+$('pg').onclick=e=>{if(!spS||!spS.item)return;const b=$('pg').getBoundingClientRect();spc('/seek?position_ms='+Math.round((e.clientX-b.left)/b.width*spS.item.duration_ms),'PUT')};
+$('cn').onclick=spAuth;
+setInterval(()=>{if(spOn()&&localStorage.sc!='1'&&!document.hidden)spPoll()},4000);setInterval(spBar,1000);
+const lay=()=>{const b=document.body.style,lc=localStorage.lc=='1',sc=localStorage.sc=='1';b.setProperty('--lw',(+localStorage.lw||300)+'px');b.setProperty('--sw',(+localStorage.sw||320)+'px');
+document.body.classList.toggle('mo',localStorage.mo=='1');$('lp').classList.toggle('c',lc);$('spp').classList.toggle('c',sc);$('mini').hidden=!lc;$('c1').textContent=lc?'›':'‹';$('c2').textContent=sc?'‹':'›';dirty=1};
+const spShow=v=>{localStorage.so=v?1:0;$('spp').hidden=!v;$('d2').hidden=!v;lay();if(v){$('ru').textContent=rurl();spUI();spPoll()}ui()};
+$('sm').onclick=()=>spShow(!spOn());
+const drag=(el,fn)=>el.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;el.setPointerCapture(e.pointerId);el.onpointermove=v=>fn(v.clientX);el.onpointerup=()=>{el.onpointermove=el.onpointerup=null}});
+drag($('d1'),x=>{if(x<90)localStorage.lc=1;else{localStorage.lc=0;localStorage.lw=Math.min(x-7,innerWidth-260)}lay()});
+drag($('d2'),x=>{const w=innerWidth-x-7;if(w<90)localStorage.sc=1;else{localStorage.sc=0;localStorage.sw=Math.min(w,innerWidth-260)}lay()});
+$('c1').onclick=()=>{localStorage.lc=localStorage.lc=='1'?0:1;lay()};$('c2').onclick=()=>{localStorage.sc=localStorage.sc=='1'?0:1;lay()};
+$('mini').onclick=()=>{localStorage.lc=0;lay()};
+// ---------- alerts, re-route, heart rate, trip summary
+let hv=0,hrS=[],AC=null,lastOs=0,al1=-1,al2=-1,al3=-1,rrBusy=0,offT=0;
+const taOn=()=>localStorage.ta!='0',rrOn=()=>localStorage.rr!='0';
+const beep=(f,ms)=>{try{AC=AC||new(window.AudioContext||webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+ms/1e3)}catch(e){}if(navigator.vibrate)navigator.vibrate(ms*2)};
+const callout=(m,d,w)=>{voice(m,d);if(!taOn())return;if(d<200&&al1!=m.i){al1=m.i;beep(880,150)}if(d<40&&al2!=m.i){al2=m.i;beep(1200,300)}if(w){const x=cum[w.i]-cum[ri];if(x<500&&al3!=w.i){al3=w.i;beep(660,400)}}};
+const omans=st=>st.filter(s=>!/depart|arrive/.test(s.maneuver.type)&&(s.maneuver.modifier!='straight'||/roundabout|rotary/.test(s.maneuver.type))).map(s=>{const m=s.maneuver,o=m.modifier||'',t={'sharp left':-135,left:-90,'slight left':-45,'slight right':45,right:90,'sharp right':135,uturn:180}[o]||0,on=s.name?' onto '+s.name:'';return{p:[m.location[1],m.location[0]],t,n:/roundabout|rotary/.test(m.type)?'Roundabout, exit '+(m.exit||'')+on:(o=='uturn'?'Make a U-turn':(o=='left'||o=='right'?'Turn ':'')+cap(o||'continue'))+on}});
+const reroute=async()=>{if(rrBusy||!cur||!route)return;rrBusy=1;try{let j=ri;while(j<route.length-1&&cum[j]-cum[ri]<300)j++;const A=cur.p,B=route[j];
+const q=await(await fetch(`https://routing.openstreetmap.de/routed-bike/route/v1/driving/${A[1]},${A[0]};${B[1]},${B[0]}?overview=full&geometries=geojson&steps=true`)).json(),rt=q.routes&&q.routes[0];if(!rt)throw 0;
+const old=mans.filter(m=>m.i>j).map(m=>({p:route[m.i],t:m.t,n:m.n})),rest=route.slice(j+1);
+setRoute(rt.geometry.coordinates.map(c=>[c[1],c[0],0,0]).concat(rest),omans(rt.legs.flatMap(l=>l.steps)).concat(old),1);toast('Re-routed 🔄')}catch(e){toast('Could not re-route (needs internet)')}rrBusy=0;offT=0};
+const hrConn=async()=>{try{const d=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['heart_rate']}),sv=await(await d.gatt.connect()).getPrimaryService('heart_rate'),ch=await sv.getCharacteristic('heart_rate_measurement');await ch.startNotifications();
+ch.addEventListener('characteristicvaluechanged',e=>{const v=e.target.value;hv=v.getUint8(0)&1?v.getUint16(1,true):v.getUint8(1);if(S.st==1&&hv)hrS.push(hv);ui()});d.addEventListener('gattserverdisconnected',()=>{hv=0;toast('Heart rate disconnected');ui()});toast('Heart rate connected ❤')}catch(e){toast(navigator.bluetooth?'Heart rate not connected':'Heart rate needs Chrome on Android')}};
+const stl=t=>{const k=S.unit?2.23694:3.6;return`avg ${t.mov>5?(t.dist/t.mov*k).toFixed(1):0}  max ${Math.round(t.max*k)} ${S.unit?'mph':'km/h'}  climb ${Math.round(t.gain||0)} m`+(t.hr?`  ❤ ${t.hr[0]}`:'')};
+const poster=(c,t)=>{const w=1080,x=c.getContext('2d');x.fillStyle='#0b0d12';x.fillRect(0,0,w,w);const P=t.pts.map(p=>wp(p[0],p[1],10));let a=[1e9,-1e9],b=[1e9,-1e9];P.forEach(q=>{a=[Math.min(a[0],q[0]),Math.max(a[1],q[0])];b=[Math.min(b[0],q[1]),Math.max(b[1],q[1])]});
+const m=90,ah=w*.62-m,sc=Math.min((w-2*m)/Math.max(a[1]-a[0],1),ah/Math.max(b[1]-b[0],1)),ox=(w-(a[1]-a[0])*sc)/2,oy=m+(ah-(b[1]-b[0])*sc)/2;
+x.beginPath();P.forEach((q,i)=>{const X=ox+(q[0]-a[0])*sc,Y=oy+(q[1]-b[0])*sc;i?x.lineTo(X,Y):x.moveTo(X,Y)});x.strokeStyle='#ffd400';x.lineWidth=9;x.lineJoin=x.lineCap='round';x.stroke();
+x.fillStyle='#fff';x.font='bold 84px system-ui';x.fillText(dk(t.dist)+' · '+ft(t.el),60,w*.82);x.font='40px system-ui';x.fillStyle='#aab';x.fillText(stl(t),60,w*.9);x.font='30px system-ui';x.fillText(new Date(t.id).toLocaleDateString(),60,w*.96)};
+const shareImg=t=>{const c=document.createElement('canvas');c.width=c.height=1080;poster(c,t);c.toBlob(async b=>{const f=new File([b],'trip-'+t.id+'.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]})}catch(e){}}else{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;a.click()}})};
+const summary=t=>{const d=(t.spl||[]).map((x,i)=>x-(t.spl[i-1]||0)),b=d.length?Math.min(...d):0;$('sht').textContent='Trip summary';
+$('tl').innerHTML=`<canvas id=pc width=1080 height=1080 style="width:100%;max-width:340px;border-radius:12px;display:block;margin:0 auto 10px"></canvas><div class=tr><b>${dk(t.dist)} · ${ft(t.el)}</b><span>${stl(t)} · moving ${ft(t.mov)}${b?' · best km '+mmss(b):''}${t.hr?' · max ❤ '+t.hr[1]:''}</span><button data-a=img data-i=${t.id}>🖼 Share picture</button><button data-a=g data-i=${t.id}>GPX</button><button data-a=s data-i=${t.id}>Strava</button></div>`;
+poster($('pc'),t);$('sh').classList.add('o');view=t.pts;fit(view)};
+$('ta').onclick=()=>{localStorage.ta=taOn()?0:1;ui()};
+const olock=async on=>{try{if(on){if(!document.fullscreenElement&&!matchMedia('(display-mode: standalone)').matches)await document.documentElement.requestFullscreen();await screen.orientation.lock('landscape')}else screen.orientation.unlock()}catch(e){toast("This phone/browser can't lock the screen direction here")}};
+$('ol').onclick=()=>{localStorage.ol=localStorage.ol=='1'?0:1;olock(localStorage.ol=='1');ui()};
+document.addEventListener('pointerdown',()=>{if(localStorage.ol=='1')olock(true)},{once:true});$('rr').onclick=()=>{localStorage.rr=rrOn()?0:1;ui()};$('hc').onclick=hrConn;
+$('os').onclick=()=>{if(+localStorage.os)localStorage.os=0;else{const v=parseFloat(prompt('Overspeed limit ('+(S.unit?'mph':'km/h')+')','40'));if(v>0)localStorage.os=S.unit?v*1.609:v}ui()};
+// ---------- group ride (MQTT relay, no accounts)
+let pr0=null,conns=[],riders={},myName=localStorage.nm||'',room='',isHost=0,sendT=0,gs='',jT=0,gid='';
+const COL=['#ff4df0','#00e5ff','#ff9500','#a78bfa','#34d399','#f87171'];
+const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',BR=['wss://broker.hivemq.com:8884/mqtt','wss://broker.emqx.io:8084/mqtt','wss://test.mosquitto.org:8081'],gT=()=>'speedo-ride/'+room.slice(1);
+const loadMq=()=>typeof mqtt!='undefined'?Promise.resolve():new Promise((ok,no)=>{const urls=['https://cdn.jsdelivr.net/npm/mqtt@5.3.4/dist/mqtt.min.js','https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js'];let i=0;const next=()=>{if(i>=urls.length){no(Error('MQTT library could not load'));return}const e=document.createElement('script');e.src=urls[i++];e.onload=()=>typeof mqtt!='undefined'?ok():next();e.onerror=next;document.head.appendChild(e)};next()});
+const gname=()=>{myName=((prompt('Your name for the group ride',myName)||myName||'Rider').trim().slice(0,14))||'Rider';localStorage.nm=myName};
+const gSend=()=>{if(!pr0||!pr0.connected||!cur)return;pr0.publish(gT(),JSON.stringify({t:'p',id:gid,n:myName,p:[cur.p[0],cur.p[1]],v:cur.v,h:cur.h,m:S.max,a:S.mov>5?S.dist/S.mov:0,d:S.dist,e:S.el,c:S.gain,r:hv}))};
+const gRecv=d=>{if(!d||d.id==gid)return;if(d.t=='p'){if(!Array.isArray(d.p)||!isFinite(d.p[0])||!isFinite(d.p[1])||typeof d.id!='string')return;riders[d.id]={id:d.id,n:String(d.n).slice(0,14),p:[+d.p[0],+d.p[1]],v:+d.v||0,h:+d.h||0,at:Date.now(),m:+d.m||0,a:+d.a||0,d:+d.d||0,e:+d.e||0,c:+d.c||0,r:+d.r||0,sa:+d.v>.6?0:((riders[d.id]&&riders[d.id].sa)||Date.now())};if(+d.v>.6)paClr(d.id)}else if(d.t=='x'&&typeof d.id=='string')delete riders[d.id];dirty=1;gUI()};
+const gLeave=()=>{const c=pr0;if(c){try{c.publish(gT(),JSON.stringify({t:'x',id:gid}))}catch(e){}setTimeout(()=>c.end(true),300)}pr0=null;room='';gs='';isHost=0;riders={};dirty=1;gUI()};
+// Group ride runs through a public MQTT relay (works on any network, no direct phone-to-phone link needed).
+// First character of the room code tells joiners which relay server the room is on.
+const gOpen=async code=>{code=(code||'').toUpperCase().replace(/\s+/g,'');if(code&&(!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{5}$/.test(code)||A.indexOf(code[0])<0)){toast('Invalid room code — enter the full 5-character code');return}try{await loadMq()}catch(e){return toast('Group ride library failed to load — check internet or content blocker')}gname();if(pr0)gLeave();
+gid=Array.from(crypto.getRandomValues(new Uint8Array(6)),x=>A[x%32]).join('');riders={};const mk=!code;let bi=mk?0:Math.max(0,A.indexOf(code[0]))%3;const rest=mk?Array.from(crypto.getRandomValues(new Uint8Array(4)),x=>A[x%32]).join(''):code.slice(1);isHost=mk?1:0;room=(mk?'…':code[0])+rest;
+const go=()=>{if(!room)return;gs='Connecting to server…';gUI();const c=pr0=mqtt.connect(BR[bi],{clientId:'spd-'+gid+Math.random().toString(36).slice(2,6),reconnectPeriod:3000,connectTimeout:8000,will:{topic:gT(),payload:JSON.stringify({t:'x',id:gid}),qos:0}});let ok=0;
+c.on('connect',()=>{if(c!=pr0)return;if(!ok){ok=1;if(mk){room=A[Math.floor(Math.random()*10)*3+bi]+rest;toast('Room '+room+' ready')}}gs='Connected'+(mk?' – share the code':'');c.subscribe(gT());gSend();gUI()});
+c.on('message',(t,m)=>{if(c==pr0)try{gRecv(JSON.parse(m.toString()))}catch(e){}});
+c.on('close',()=>{if(c==pr0&&ok){gs='Connection lost – reconnecting…';gUI()}});
+setTimeout(()=>{if(c!=pr0||ok)return;if(mk){c.end(true);if(bi<BR.length-1){bi++;go();return}}gs=mk?"Can't reach any group server — check internet, VPN or network blocking":"Can't reach this room's server — check the code, or ask the host to create a new room";toast(gs);gUI()},9000)};go()};
+const gStart=()=>gOpen(),gJoin=c=>gOpen(c.toUpperCase().trim());
+const gShare=async()=>{const u=rurl()+'?room='+room,t='Join my group ride on Speedo – room code '+room;try{if(navigator.share)await navigator.share({title:'Group ride',text:t,url:u});else{await navigator.clipboard.writeText(t+' '+u);toast('Invite copied')}}catch(e){}};
+const gUI=()=>{ui();if($('sht').textContent!='Group ride'||!$('sh').classList.contains('o'))return;const k=S.unit?2.23694:3.6,u=S.unit?'mph':'km/h',now=Date.now();
+$('tl').innerHTML=(room?`<div class=tr><b>Room ${esc(room)}</b><span>${pr0&&pr0.connected?'Connected · '+Object.keys(riders).length+' rider(s) visible'+(cur?'':' · waiting for GPS fix'):(gs||'Connecting…')}</span><button data-a=gs>📤 Share invite</button><button data-a=gl>Leave</button></div>`:`<div class=tr><span>See friends on the map live. One person creates a room and everyone else joins with the code. Your position is shared only while you are in a room.</span><button data-a=gc>Create room</button><button data-a=gj>Join with code</button></div>`)+Object.values(riders).map(g=>`<div class=tr><b style="color:${COL[g.id.charCodeAt(g.id.length-1)%6]}">${esc(g.n)}</b><span>${cur?fd(hav(cur.p,g.p))+' away · ':''}${Math.round(g.v*k)} ${u} · ${Math.round((now-g.at)/1e3)}s ago</span><button data-a=gz data-r="${esc(g.id)}">Show on map</button></div>`).join('')};
+$('gr').onclick=()=>{$('sht').textContent='Group ride';$('sh').classList.add('o');gUI()};
+setInterval(()=>{const n=Date.now();let c=0;for(const k in riders){c=1;if(n-riders[k].at>60000)delete riders[k]}if(c)dirty=1},5000);
+{const rm=new URLSearchParams(location.search).get('room');if(rm){history.replaceState(0,'',location.pathname);if(confirm('Join group ride '+rm.toUpperCase()+'?'))gJoin(rm)}}
+$('mgo').onclick=()=>$('go').click();
+const mo=()=>{localStorage.mo=localStorage.mo=='1'?0:1;lay();ui()};$('mo').onclick=mo;$('mex').onclick=mo;
+$('spl').onclick=async()=>{let L=S.spl,nm='Current ride';if(!S.st||!L.length){const all=((await kv('r',s=>s.getAll()))||[]).filter(x=>x&&x.pts).sort((a,b)=>b.id-a.id);if(all[0]){L=all[0].spl||[];nm=new Date(all[0].id).toLocaleString()}}
+$('sht').textContent='Km splits';const d=L.map((t,i)=>t-(L[i-1]||0)),best=Math.min(...d);
+$('tl').innerHTML=`<div class=tr><b>${esc(nm)}</b></div>`+(d.map((x,i)=>`<div class=tr><b>Km ${i+1}${x==best?' ⭐':''}</b><span>${mmss(x)} · ${(3600/x*(S.unit?.621371:1)).toFixed(1)} ${S.unit?'mph':'km/h'}</span></div>`).join('')||'<p style="opacity:.6">No full km recorded yet.</p>');$('sh').classList.add('o')};
+$('sl').onclick=async()=>{if(!cur)return toast('No GPS fix yet');const k=S.unit?2.23694:3.6,sp=pace(),l=route?cum[cum.length-1]-cum[ri]:0,u=`https://maps.google.com/?q=${cur.p[0].toFixed(6)},${cur.p[1].toFixed(6)}`,t=`Riding at ${Math.round(cur.v*k)} ${S.unit?'mph':'km/h'}`+(route&&sp?` · ${fd(l)} to go, ETA ${new Date(Date.now()+l/sp*1e3).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`:'');
+try{if(navigator.share)await navigator.share({title:'My location',text:t,url:u});else{await navigator.clipboard.writeText(t+' '+u);toast('Link copied')}}catch(e){}};
+// ---------- v16: home screen, live party, alerts, catch-up, voice, stats
+const STOPMS=5000;let tp=null,lsId=null,cuOn=0,vs={},lastD=0;const pal={};
+const voOn=()=>localStorage.vo=='1',vl=()=>{$('vo').textContent='🔊 Voice directions: '+(voOn()?'on':'off')};
+const say=t=>{try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t))}catch(e){}};
+const dd=x=>S.unit?Math.max(100,Math.round(x*3.281/100)*100)+' feet':Math.max(50,Math.round(x/50)*50)+' meters';
+const voice=(m,d)=>{if(!voOn()||d>420)return;const b=d<45?0:d<160?1:2,k=m.i+'_'+b;if(vs[k])return;vs[k]=1;const n=(m.n||tx(m.t)).toLowerCase();say(b?'In '+dd(d)+', '+n:n+' now')};
+// stopped-rider alerts
+const paShow=g=>{const e=document.createElement('div');e.className='pa g';e.innerHTML=`<div><b>${esc(g.n)}</b> has stopped<br><span>${cur?fd(hav(cur.p,g.p))+' away':''}</span></div><button>✕</button>`;
+const kill=()=>{clearTimeout(o.t);e.remove()},o=pal[g.id]={kill,t:setTimeout(()=>kill(),20000)};e.querySelector('button').onclick=kill;let x0=0;e.onpointerdown=v=>{x0=v.clientX};e.onpointerup=v=>{if(Math.abs(v.clientX-x0)>50)kill()};$('pal').appendChild(e);beep(500,300)};
+const paClr=id=>{const o=pal[id];if(o){o.kill();delete pal[id]}};
+const paTick=()=>{const n=Date.now();for(const k in riders){const g=riders[k];if(g.sa&&n-g.sa>STOPMS&&!pal[k])paShow(g)}};
+// catch-up checker
+const cuR=()=>{const e=$('cu');e.hidden=!cuOn;if(!cuOn)return;const k=S.unit?2.23694:3.6,u=S.unit?' mph':' km/h',L=Object.values(riders);
+if(!cur||!L.length){e.innerHTML='<b>Catch-up checker</b><div>'+(room?'Waiting for riders…':'Join a group ride first')+'</div>';return}
+e.innerHTML='<b>Catch-up checker</b>'+L.map(g=>{const d=hav(cur.p,g.p),ahead=Math.abs(((brg(cur.p,g.p)-cur.h+540)%360)-180)<90;let t;
+if(ahead)t=cur.v>g.v+.3?'you catch up in <b>'+fm(d/(cur.v-g.v))+'</b>':"can't catch up – they do "+Math.round(g.v*k)+' vs your '+Math.round(cur.v*k)+u;
+else t=(g.v>.6?'they reach you in <b>'+fm(d/g.v)+'</b> if you stop':"they're stopped")+(g.v>cur.v+.3?' · closing in '+fm(d/(g.v-cur.v)):'');
+return`<div>${esc(g.n)}: ${fd(d)} ${ahead?'ahead':'behind'} – ${t}</div>`}).join('')};
+// live rider stats
+const lcard=(t,o)=>{const k=S.unit?2.23694:3.6,u=S.unit?' mph':' km/h',c=(a,b)=>`<div class=sc><small>${a}</small><b>${b}</b></div>`;return`<div class=lc><h4>${esc(t)}</h4><div class=sg>`+c('Speed',Math.round(o.v*k)+u)+c('Max',Math.round(o.m*k)+u)+c('Average',(o.a*k).toFixed(1)+u)+c('Distance',dk(o.d))+c('Time',ft(o.e))+c('Climb',Math.round(o.c)+' m')+c('Heart rate',o.r||'–')+`</div></div>`};
+const liveR=f=>{if(!f&&($('sht').textContent!='Live stats'||!$('sh').classList.contains('o')))return;const me={v:cur?cur.v:0,m:S.max,a:S.mov>5?S.dist/S.mov:0,d:S.dist,e:S.el,c:S.gain,r:hv},L=Object.values(riders),f1=L.find(g=>g.id==lsId),st=$('sh').scrollTop;
+$('tl').innerHTML=(f1?lcard(f1.n+"'s stats · live",f1):'')+lcard('Mine',me)+L.filter(g=>g!=f1).map(g=>lcard(g.n+"'s stats · live",g)).join('')+(L.length?'':'<p style="opacity:.6">Nobody else is in your group ride yet.</p>');$('sh').scrollTop=st};
+const liveSheet=id=>{lsId=id||null;$('sht').textContent='Live stats';$('sh').classList.add('o');liveR(1)};
+{let y0=null;const P=$('lp');P.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});P.addEventListener('touchend',e=>{if(y0!=null&&y0-e.changedTouches[0].clientY>60){if(room)liveSheet();else toast('Join a group ride to see live rider stats')}y0=null},{passive:true})}
+// all-time stats
+const statsAll=async()=>{const all=((await kv('r',s=>s.getAll()))||[]).filter(x=>x&&x.pts),k=S.unit?2.23694:3.6,u=S.unit?' mph':' km/h';$('sht').textContent='Stats & records';
+if(!all.length){$('tl').innerHTML='<p style="opacity:.6">No trips yet – record one first.</p>';$('sh').classList.add('o');return}
+const sum=f=>all.reduce((a,t)=>a+(f(t)||0),0),D=sum(t=>t.dist),M=sum(t=>t.mov),c=(a,b)=>`<div class=sc><small>${a}</small><b>${b}</b></div>`,wk={};
+all.forEach(t=>{const d=new Date(t.id);d.setHours(0,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);wk[+d]=(wk[+d]||0)+t.dist});const ws=Object.keys(wk).sort().slice(-8),mw=Math.max(...ws.map(x=>wk[x]));
+$('tl').innerHTML='<div class=sg>'+[c('Recorded trips',all.length),c('Total distance',dk(D)),c('Total time',ft(sum(t=>t.el))),c('Longest ride',dk(Math.max(...all.map(t=>t.dist)))),c('Top speed',Math.round(Math.max(...all.map(t=>t.max))*k)+u),c('All-time average',(M>5?(D/M*k).toFixed(1):0)+u),c('Total climb',Math.round(sum(t=>t.gain))+' m'),c('Average ride',dk(D/all.length))].join('')+'</div><h4>Distance per week</h4><div class=wb>'+ws.map(x=>`<div><em>${(wk[x]/(S.unit?1609.34:1000)).toFixed(1)}</em><i style="height:${Math.max(4,wk[x]/mw*100)}%"></i><small>${new Date(+x).toLocaleDateString([],{day:'numeric',month:'short'})}</small></div>`).join('')+'</div>';$('sh').classList.add('o')};
+// home screen (reuses the menu buttons so labels stay live)
+const home=on=>{$('home').hidden=!on;(on?$('hmg'):$('mn')).appendChild($('mg'));if(on)$('hrt').textContent=route?'Route loaded · '+fd(cum[cum.length-1])+' · '+mans.length+' turns':'No route loaded (optional)';$('mn').classList.remove('o');dirty=1};
+$('hs').onclick=()=>{home(0);if(!S.st)$('go').click()};
+$('vo').onclick=()=>{localStorage.vo=voOn()?0:1;if(voOn())say('Voice directions on');vl()};
+$('sa').onclick=$('hsa').onclick=statsAll;$('ls').onclick=$('lsB').onclick=()=>liveSheet();
+$('cuB').onclick=()=>{cuOn^=1;$('cuB').style.background=cuOn?'#19c37d':'';cuR()};
+vl();home(1);
+lay();if(spOn())spShow(1);
+{const q=new URLSearchParams(location.search),cd=q.get('code');if(cd&&localStorage.spv){history.replaceState(0,'',location.pathname);tok({grant_type:'authorization_code',code:cd,redirect_uri:rurl(),code_verifier:localStorage.spv}).then(ok=>{localStorage.removeItem('spv');spShow(1);toast(ok?'Spotify connected ✔':'Spotify login failed')})}}
+// ---------- boot
+{const q=new URLSearchParams(location.search),m=((q.get('url')||'')+' '+(q.get('text')||'')).match(/https?:\/\/\S+/);if(m){history.replaceState(0,'',location.pathname);gm(m[0])}}
+(async()=>{const c=await kv('r',s=>s.get('cur'));if(c&&c.pts&&c.pts.length>1){await kv('w',s=>s.put(c,'t'+c.id));await kv('w',s=>s.delete('cur'));toast('Recovered an unfinished trip')}})();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+new ResizeObserver(rs).observe($('mp'));addEventListener('resize',rs);rs();ui();loop();
+</script></body></html>
